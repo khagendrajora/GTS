@@ -1,6 +1,8 @@
 import axios from 'axios';
 import React, { useCallback, useEffect, useState } from 'react'
 import { API } from '../Config';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 
 const products = [
@@ -56,9 +58,11 @@ const products = [
     { id: 50, itemName: 'Item 50', price: 12, weight: 20 }
 ];
 
-
 export const Home = () => {
-    const [selectedItems, setSelectedItems] = useState([]);
+    const [selectedItems, setSelectedItems] = useState([])
+    const [weight, setWeight] = useState()
+    const [price, setPrice] = useState()
+
 
     const handleChange = useCallback((product) => {
         setSelectedItems(prevItems =>
@@ -66,18 +70,43 @@ export const Home = () => {
         );
 
     }, []);
+
+    useEffect(() => {
+        const weight = selectedItems.reduce((cw, acc) => cw + acc.weight, 0)
+        let price = selectedItems.reduce((cw, acc) => cw + acc.price, 0)
+
+        if (weight <= 200) {
+            price = price + 5
+            setPrice(price)
+        } else if (weight > 200 && weight <= 500) {
+            price = price + 10
+            setPrice(price)
+
+        } else if (weight > 500 && weight <= 1000) {
+            price = price + 15
+            setPrice(price)
+        } else {
+            price = price + 20
+            setPrice(price)
+        }
+        setWeight(weight)
+        console.log(price)
+    }, [selectedItems])
+
     useEffect(() => {
         console.log(selectedItems);
     }, [selectedItems]);
 
     const handleClick = () => {
         try {
-
             axios.post(`${API}/placeOrder`, { items: selectedItems })
                 .then(response => {
                     console.log(response.data)
-                }).catch(err => console.log(err)
-
+                    toast.success('Order placed Successfully')
+                }).catch(err => {
+                    toast.error('Failed ')
+                    console.log(err)
+                }
                 )
         } catch (error) {
             console.log(error)
@@ -85,13 +114,14 @@ export const Home = () => {
     }
     return (
         <>
+            <ToastContainer theme='colored' position='top-right' />
             <div className='selected-list'>
                 <div className='data'>
                     <table className='table  table-bordered table-striped'>
                         <tbody>
                             {selectedItems.map((item, i) =>
                                 <tr key={i}>
-                                    <td> {item.name}</td>
+                                    <td> {item.itemName}</td>
                                     <td>${item.price}</td>
                                     <td>{item.weight}g</td>
                                 </tr>
@@ -100,24 +130,35 @@ export const Home = () => {
                     </table>
                     {selectedItems.length > 0 &&
                         <button className='btn btn-success' onClick={handleClick}>Place Order</button>
-
                     }
                 </div>
             </div>
+            {selectedItems.map((item =>
+                <div> {item.itemName}</div>
+            ))
+            }
+            {weight && price && (
+                <>
+
+                    <p>Total Weight={weight}g</p>
+                    <p>Total Price = {price}</p>
+                </>
+            )
+
+            }
             <div className='item-list'>
                 <div className='data'>
                     <table className='table  table-bordered table-striped'>
                         <thead className=''>
                             <tr className=''>
-                                <th></th>
-                                <th>Item Name</th>
-                                <th>Price</th>
-                                <th>Weight</th>
+                                <th className='col-1'></th>
+                                <th className=''>Item Name</th>
+                                <th className=''>Price</th>
+                                <th className=''>Weight</th>
                             </tr>
                         </thead>
                         <tbody>
                             {products.map((product =>
-
                                 <tr key={product.id}>
                                     <td><input type='checkbox' onChange={() => handleChange(product)}
                                         checked={selectedItems.includes(product)} /></td>
