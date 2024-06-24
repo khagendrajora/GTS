@@ -4,7 +4,6 @@ import { API } from '../Config';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
-
 const products = [
     { id: 1, itemName: 'Item 1', price: 10, weight: 200 },
     { id: 2, itemName: 'Item 2', price: 100, weight: 20 },
@@ -59,40 +58,31 @@ const products = [
 ];
 
 export const Home = () => {
+    const [orderList, setOrderList] = useState([])
     const [selectedItems, setSelectedItems] = useState([]);
     const [packages, setPackage] = useState([])
-    // const [orderItem, setOrderItem] = useState([])
-    // const [weight, setWeight] = useState()
-    // const [price, setPrice] = useState()
+
+
+    useEffect(() => {
+        axios.get(`${API}/orderList`)
+            .then(res => {
+                setOrderList(res.data)
+                console.log(res.data)
+            }).catch(err => {
+                console.log(err)
+            })
+    },)
 
 
     const handleChange = useCallback((product) => {
         setSelectedItems(prevItems =>
             prevItems.includes(product) ? prevItems.filter(item => item !== product) : [...prevItems, product]
+            //set the checked items in selectedItems varaible if they are not present already 
         );
 
     }, []);
 
     useEffect(() => {
-        // const weight = selectedItems.reduce((cw, acc) => cw + acc.weight, 0)
-        // let price = selectedItems.reduce((cw, acc) => cw + acc.price, 0)
-
-        // if (weight <= 200) {
-        //     price = price + 5
-        //     setPrice(price)
-        // } else if (weight > 200 && weight <= 500) {
-        //     price = price + 10
-        //     setPrice(price)
-
-        // } else if (weight > 500 && weight <= 1000) {
-        //     price = price + 15
-        //     setPrice(price)
-        // } else {
-        //     price = price + 20
-        //     setPrice(price)
-        // }
-        // setWeight(weight)
-        // console.log(price)
         const packageItems = (items) => {
             let data = []
             let currentPackage = {
@@ -102,7 +92,7 @@ export const Home = () => {
             }
 
             items.forEach(item => {
-                if (currentPackage.totalPrice + item.price <= 250) {
+                if (currentPackage.totalPrice + item.price <= 250) {  //checks the condition of price if it is less then 250 or not to make the packages
                     currentPackage.items.push(item)
                     currentPackage.totalPrice += item.price
                     currentPackage.totalWeight += item.weight
@@ -121,27 +111,50 @@ export const Home = () => {
             return data
         }
         setPackage(packageItems(selectedItems))
+        console.log(selectedItems); // this is just to understand the structure of the data
 
     }, [selectedItems])
 
-    useEffect(() => {
-        console.log(selectedItems);
-    }, [selectedItems]);
+
 
     const handleClick = (packages) => {
+        console.log(packages)
+        let name = []  // i used the array as package contains multiple items.
+
+        packages.items.map(item => (
+            name.push(item.itemName)
+        ))
+
+        if (packages.totalWeight <= 200) {
+            packages.totalPrice += 5
+
+        } else if (packages.totalWeight > 200 && packages.totalWeight <= 500) {
+            packages.totalPrice += 10
+
+
+        } else if (packages.totalWeight > 500 && packages.totalWeight <= 1000) {
+            packages.totalPrice += 15
+
+        } else {
+            packages.totalPrice += 20
+
+        }
+
         const orderData = {
-            itemName: 'hello',
+            itemName: name,
             price: packages.totalPrice,
             weight: packages.totalWeight
 
         }
-
         console.log(orderData)
         try {
             axios.post(`${API}/placeOrder`, orderData)
                 .then(response => {
                     console.log(response.data)
                     toast.success('Order placed Successfully')
+                    setPackage(prevPackages => prevPackages.filter(packg => packg !== packages));
+                    // this line is to remove the data form package once it is placed for order.
+
                 }).catch(err => {
                     toast.error('Failed ')
                     console.log(err)
@@ -154,15 +167,45 @@ export const Home = () => {
     return (
         <>
             <ToastContainer theme='colored' position='top-right' />
+
             <div className='container'>
+                <div className='orders'>
+                    {orderList.length > 0 ? (
 
 
+                        <h3>Orders</h3>
+                    ) : null
+                    }
+                    <div className='order-list'>
+
+                        {orderList && orderList.map((orders, k) => (
+
+
+                            <div key={k} className='order-item'>
+                                <h4>Package {k + 1}</h4>
+                                <hr />
+
+                                <p>Items: {orders.itemName}</p>
+
+
+                                <p>Total Weight: {orders.weight}g</p>
+                                <p>Total Price: ${orders.price}</p>
+
+                            </div>
+
+                        ))
+
+
+                        }
+                    </div>
+                </div>
                 <div className='selected-list'>
                     <div className='data'>
-                        <table className='table  table-bordered table-striped'>
+                        <table className='table table-bordered table-striped'>
                             <tbody>
                                 {selectedItems.map((item, i) =>
                                     <tr key={i}>
+                                        <td>{item.id}</td>
                                         <td> {item.itemName}</td>
                                         <td>${item.price}</td>
                                         <td>{item.weight}g</td>
@@ -170,45 +213,40 @@ export const Home = () => {
                                 )}
                             </tbody>
                         </table>
-                        {/* {selectedItems.length > 0 &&
-                            <button className='btn btn-success' onClick={handleClick}>Place Order</button>
-                        } */}
+
+                    </div>
+                    <div className='package'>
+                        {packages.map((packages, i) => (
+                            <div className='package-data'>
+
+                                <div key={i}>
+                                    <h3>Package {i + 1}</h3>
+                                    <ul>
+                                        {
+                                            packages.items.map((item, j) => (
+                                                <li key={j}>
+                                                    {item.itemName}
+
+                                                </li>
+                                            ))
+                                        }
+                                    </ul>
+                                    <p>Total Weight: {packages.totalWeight}g</p>
+                                    <p>Total Price: ${packages.totalPrice}</p>
+                                    <p>Courier Price: ${packages.totalWeight <= 200 ? 5 : packages.totalWeight <= 500 ? 10 : packages.totalWeight <= 1000 ? 15 : 20}</p>
+
+                                    <button className='btn btn-success' onClick={() => handleClick(packages)}>Place Order</button>
+                                </div>
+                            </div>
+                        ))
+                        }
                     </div>
                 </div>
-                <div className='package'>
-                    {packages.map((packages, i) => (
 
-                        <div key={i}>
-                            <h3>PAckage {i + 1}</h3>
-                            <ul>
-                                {
-                                    packages.items.map((item, j) => (
-                                        <li key={j}>
-                                            {item.itemName}
 
-                                        </li>
-                                    ))
-                                }
-                            </ul>
-                            <p>Total Weight: {packages.totalWeight}g</p>
-                            <p>Total Price: ${packages.totalPrice}</p>
-                            <p>Courier Price: ${packages.totalWeight <= 200 ? 5 : packages.totalWeight <= 500 ? 10 : packages.totalWeight <= 1000 ? 15 : 20}</p>
-                            <button className='btn btn-success' onClick={() => handleClick(packages)}>Place Order</button>
-                        </div>
-                    ))
-                    }
-                </div>
-                {/* {weight && price && (
-                <>
-
-                    <p>Total Weight={weight}g</p>
-                    <p>Total Price = {price}</p>
-                </>
-            )
-
-            } */}
                 <div className='item-list'>
-                    <div className='data'>
+                    <h3>Item List</h3>
+                    <div className='item-data'>
                         <table className='table  table-bordered table-striped'>
                             <thead className=''>
                                 <tr className=''>

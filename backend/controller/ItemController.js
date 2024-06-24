@@ -19,14 +19,22 @@ exports.placeOrder = async (req, res) => {
     catch (error) {
         return res.status(400).json({ error: 'Items not uploaded', details: error });
     }
-    // try {
-    //     const savedItems = await Promise.all(items.map(async (itemData) => {
-    //         let item = new Item(itemData)
-    //         return await item.save()
-    //     }))
-    //     return res.status(200).json(savedItems);
-    // } catch (error) {
-    //     return res.status(400).json({ error: 'Items not uploaded', details: error });
-    // }
+}
+
+exports.orderList = async (req, res) => {
+    try {
+
+        const orderList = await Item.find()
+        if (!orderList) {
+            return res.status(400).json({ err: 'list not found' })
+        } else {
+
+            res.send(orderList)
+        }
+
+
+    } catch (error) {
+        return res.status(400).json({ err: "failed to fetch" })
+    }
 
 }
