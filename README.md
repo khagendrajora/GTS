@@ -1,7 +1,7 @@
 #GST
-install all dependencies 
+1. install all dependencies 
   cmd: npm i 
-To run the peroject 
+ 2. To run the peroject 
   cmd: npm start
 
 ![image alt](https://github.com/khagendrajora/GTS/blob/45be630d3c4726a4337387da414c9603088ed08b/Initial%20Page.png)
