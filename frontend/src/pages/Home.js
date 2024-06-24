@@ -59,9 +59,11 @@ const products = [
 ];
 
 export const Home = () => {
-    const [selectedItems, setSelectedItems] = useState([])
-    const [weight, setWeight] = useState()
-    const [price, setPrice] = useState()
+    const [selectedItems, setSelectedItems] = useState([]);
+    const [packages, setPackage] = useState([])
+    // const [orderItem, setOrderItem] = useState([])
+    // const [weight, setWeight] = useState()
+    // const [price, setPrice] = useState()
 
 
     const handleChange = useCallback((product) => {
@@ -72,34 +74,71 @@ export const Home = () => {
     }, []);
 
     useEffect(() => {
-        const weight = selectedItems.reduce((cw, acc) => cw + acc.weight, 0)
-        let price = selectedItems.reduce((cw, acc) => cw + acc.price, 0)
+        // const weight = selectedItems.reduce((cw, acc) => cw + acc.weight, 0)
+        // let price = selectedItems.reduce((cw, acc) => cw + acc.price, 0)
 
-        if (weight <= 200) {
-            price = price + 5
-            setPrice(price)
-        } else if (weight > 200 && weight <= 500) {
-            price = price + 10
-            setPrice(price)
+        // if (weight <= 200) {
+        //     price = price + 5
+        //     setPrice(price)
+        // } else if (weight > 200 && weight <= 500) {
+        //     price = price + 10
+        //     setPrice(price)
 
-        } else if (weight > 500 && weight <= 1000) {
-            price = price + 15
-            setPrice(price)
-        } else {
-            price = price + 20
-            setPrice(price)
+        // } else if (weight > 500 && weight <= 1000) {
+        //     price = price + 15
+        //     setPrice(price)
+        // } else {
+        //     price = price + 20
+        //     setPrice(price)
+        // }
+        // setWeight(weight)
+        // console.log(price)
+        const packageItems = (items) => {
+            let data = []
+            let currentPackage = {
+                items: [],
+                totalPrice: 0,
+                totalWeight: 0
+            }
+
+            items.forEach(item => {
+                if (currentPackage.totalPrice + item.price <= 250) {
+                    currentPackage.items.push(item)
+                    currentPackage.totalPrice += item.price
+                    currentPackage.totalWeight += item.weight
+                } else {
+                    data.push(currentPackage)
+                    currentPackage = {
+                        items: [item],
+                        totalPrice: item.price,
+                        totalWeight: item.weight
+                    }
+                }
+            })
+            if (currentPackage.items.length) {
+                data.push(currentPackage)
+            }
+            return data
         }
-        setWeight(weight)
-        console.log(price)
+        setPackage(packageItems(selectedItems))
+
     }, [selectedItems])
 
     useEffect(() => {
         console.log(selectedItems);
     }, [selectedItems]);
 
-    const handleClick = () => {
+    const handleClick = (packages) => {
+        const orderData = {
+            itemName: 'hello',
+            price: packages.totalPrice,
+            weight: packages.totalWeight
+
+        }
+
+        console.log(orderData)
         try {
-            axios.post(`${API}/placeOrder`, { items: selectedItems })
+            axios.post(`${API}/placeOrder`, orderData)
                 .then(response => {
                     console.log(response.data)
                     toast.success('Order placed Successfully')
@@ -115,29 +154,51 @@ export const Home = () => {
     return (
         <>
             <ToastContainer theme='colored' position='top-right' />
-            <div className='selected-list'>
-                <div className='data'>
-                    <table className='table  table-bordered table-striped'>
-                        <tbody>
-                            {selectedItems.map((item, i) =>
-                                <tr key={i}>
-                                    <td> {item.itemName}</td>
-                                    <td>${item.price}</td>
-                                    <td>{item.weight}g</td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
-                    {selectedItems.length > 0 &&
-                        <button className='btn btn-success' onClick={handleClick}>Place Order</button>
+            <div className='container'>
+
+
+                <div className='selected-list'>
+                    <div className='data'>
+                        <table className='table  table-bordered table-striped'>
+                            <tbody>
+                                {selectedItems.map((item, i) =>
+                                    <tr key={i}>
+                                        <td> {item.itemName}</td>
+                                        <td>${item.price}</td>
+                                        <td>{item.weight}g</td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                        {/* {selectedItems.length > 0 &&
+                            <button className='btn btn-success' onClick={handleClick}>Place Order</button>
+                        } */}
+                    </div>
+                </div>
+                <div className='package'>
+                    {packages.map((packages, i) => (
+
+                        <div key={i}>
+                            <h3>PAckage {i + 1}</h3>
+                            <ul>
+                                {
+                                    packages.items.map((item, j) => (
+                                        <li key={j}>
+                                            {item.itemName}
+
+                                        </li>
+                                    ))
+                                }
+                            </ul>
+                            <p>Total Weight: {packages.totalWeight}g</p>
+                            <p>Total Price: ${packages.totalPrice}</p>
+                            <p>Courier Price: ${packages.totalWeight <= 200 ? 5 : packages.totalWeight <= 500 ? 10 : packages.totalWeight <= 1000 ? 15 : 20}</p>
+                            <button className='btn btn-success' onClick={() => handleClick(packages)}>Place Order</button>
+                        </div>
+                    ))
                     }
                 </div>
-            </div>
-            {selectedItems.map((item =>
-                <div> {item.itemName}</div>
-            ))
-            }
-            {weight && price && (
+                {/* {weight && price && (
                 <>
 
                     <p>Total Weight={weight}g</p>
@@ -145,30 +206,31 @@ export const Home = () => {
                 </>
             )
 
-            }
-            <div className='item-list'>
-                <div className='data'>
-                    <table className='table  table-bordered table-striped'>
-                        <thead className=''>
-                            <tr className=''>
-                                <th className='col-1'></th>
-                                <th className=''>Item Name</th>
-                                <th className=''>Price</th>
-                                <th className=''>Weight</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {products.map((product =>
-                                <tr key={product.id}>
-                                    <td><input type='checkbox' onChange={() => handleChange(product)}
-                                        checked={selectedItems.includes(product)} /></td>
-                                    <td>{product.itemName}</td>
-                                    <td>${product.price}</td>
-                                    <td>{product.weight}g</td>
+            } */}
+                <div className='item-list'>
+                    <div className='data'>
+                        <table className='table  table-bordered table-striped'>
+                            <thead className=''>
+                                <tr className=''>
+                                    <th className='col-1'></th>
+                                    <th className=''>Item Name</th>
+                                    <th className=''>Price</th>
+                                    <th className=''>Weight</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                {products.map((product =>
+                                    <tr key={product.id}>
+                                        <td><input type='checkbox' onChange={() => handleChange(product)}
+                                            checked={selectedItems.includes(product)} /></td>
+                                        <td>{product.itemName}</td>
+                                        <td>${product.price}</td>
+                                        <td>{product.weight}g</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </>
