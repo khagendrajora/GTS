@@ -153,6 +153,11 @@ export const Home = () => {
                     console.log(response.data)
                     toast.success('Order placed Successfully')
                     setPackage(prevPackages => prevPackages.filter(packg => packg !== packages));
+
+                    if (packages.length === 0) {
+                        setSelectedItems([])
+
+                    }
                     // this line is to remove the data form package once it is placed for order.
 
                 }).catch(err => {
